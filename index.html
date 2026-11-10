@@ -178,6 +178,29 @@ input[type=search] { font: inherit; font-size: 14px; color: var(--ink); backgrou
 .dst .cols .hb { grid-template-columns: minmax(0, 1fr) 28% auto; }
 .dst .cols h4 { margin: 0 0 6px; font-size: 13px; font-weight: 550; color: var(--ink-2); }
 .dst .fonte { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
+.rank-indice { margin: 13px 0 6px; border-left: 3px solid var(--b-green); padding: 9px 12px; font-size: 13px; line-height: 1.5; background: var(--surface-2); color: var(--ink-2); border-radius: 0 7px 7px 0; }
+.rank-indice strong { color: var(--ink); }
+.rank th:nth-child(3) { white-space: normal; min-width: 75px; }
+.dst-wide { grid-column: 1 / -1; }
+.uf-quadros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 22px; }
+.uf-quadros .hb { grid-template-columns: minmax(0, 138px) 1fr auto; gap: 4px 9px; }
+.uf-quadros .hb .nm { min-width: 0; }
+.uf-quadros .hb .nm a { color: var(--s1); text-decoration: none; cursor: pointer; }
+.uf-quadros .hb .nm a:hover { text-decoration: underline; }
+@media (max-width: 700px) { .uf-quadros { grid-template-columns: 1fr; } .uf-quadros .hb { grid-template-columns: minmax(0, 125px) 1fr auto; } }
+@media (max-width: 640px) {
+  .rank .scroll { overflow-x: visible; }
+  .rank table { table-layout: fixed; width: 100%; font-size: 11px; }
+  .rank th, .rank td { padding: 7px 3px; }
+  .rank th { font-size: 10px; white-space: normal; overflow-wrap: break-word; }
+  .rank td:first-child { white-space: normal; line-height: 1.3; }
+  .rank td:not(:first-child) { white-space: nowrap; }
+  .rank th:nth-child(1), .rank td:nth-child(1) { width: 30%; }
+  .rank th:nth-child(2), .rank td:nth-child(2) { width: 22%; }
+  .rank th:nth-child(3), .rank td:nth-child(3) { width: 21%; min-width: 0; }
+  .rank th:nth-child(4), .rank td:nth-child(4) { width: 27%; }
+}
+@media (max-width: 440px) { .rank-indice { font-size: 12px; } }
 /* detalhes de identidade: verde, azul-marinho e vinho */
 header { background: linear-gradient(100deg, var(--b-wine) 0 7%, var(--b-green) 7% 64%, var(--b-navy) 64%) top / 100% 5px no-repeat, var(--surface); }
 h1 { color: var(--b-ink); }
@@ -667,8 +690,9 @@ function telaBR() {
       ${kpi("Cota-parte conciliada com municípios", fInt(M.n_aj), "estado x ano; base calculada com a cota-parte dos municípios")}
     </div>
     <div class="card rank"><h3 class="t">Estados e DF por coeficiente</h3><div class="scroll"><table>
-      <thead><tr><th>Ente</th><th>Coeficiente</th><th>Índice</th><th>Municípios do estado</th></tr></thead><tbody>${lin}</tbody></table></div>
-      <p class="fine">Coeficiente do estado: ICMS após a cota-parte. Municípios (soma): participação conjunta dos municípios da UF (ISS + cota-parte). Clique em um estado para consultar as notas e os alertas dos dados.</p></div>`;
+      <thead><tr><th>Ente</th><th>Coeficiente</th><th title="Índice de receita histórica por habitante">Índice por habitante</th><th>Municípios do estado</th></tr></thead><tbody>${lin}</tbody></table></div>
+      <p class="rank-indice"><strong>Como ler o índice por habitante:</strong> compara a participação do estado na receita histórica com sua participação na população dos 26 estados e do DF. <strong>1,00 = média do grupo</strong>; acima de 1, participação maior do que a proporcional à população; abaixo de 1, participação menor. Não é valor em reais nem previsão da receita futura do IBS.</p>
+      <p class="fine">Coeficiente do estado: ICMS após a cota-parte. Municípios do estado: soma dos coeficientes dos municípios da UF (ISS + cota-parte). O índice dos municípios é calculado separadamente do índice dos estados. Clique no nome do estado para consultar os detalhes e os alertas dos dados.</p></div>`;
   document.querySelectorAll(".rank a").forEach((a) => (a.onclick = () => ir(a.dataset.u, "", false)));
 }
 
@@ -917,7 +941,14 @@ if (D) {
     });
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Participação no ISS do país por ano">${g}</svg>`;
   }
-  const card = (tit, sub, corpo, fonte = "") => `<section class="dst"><h3>${tit}</h3><p class="q">${sub}</p>${corpo}${fonte ? `<p class="fonte">${fonte}</p>` : ""}</section>`;
+  const card = (tit, sub, corpo, fonte = "", classe = "") => `<section class="dst${classe ? " " + classe : ""}"><h3>${tit}</h3><p class="q">${sub}</p>${corpo}${fonte ? `<p class="fonte">${fonte}</p>` : ""}</section>`;
+  const linkUF = (uf) => `<a data-uf-only="${uf}" title="Abrir ${esc(EST[uf].n)} no painel">${esc(EST[uf].n)}</a>`;
+  // Gráficos completos, em duas colunas no desktop e uma coluna no celular.
+  function barrasUF(linhas, fmt, cor, max = 1) {
+    const meio = Math.ceil(linhas.length / 2);
+    return `<div class="uf-quadros">${[linhas.slice(0,meio),linhas.slice(meio)].map(grupo =>
+      barras(grupo.map(([u, v])=> [linkUF(u), v]), fmt, cor, max)).join("")}</div>`;
+  }
   const U = M.ultimo;
 
   // Descobertas escolhidas para públicos não especializados. Todas são descritivas
@@ -975,12 +1006,32 @@ if (D) {
        `<div><div><strong>${pc(A.pct_pop,0)}</strong><span> da população nesses municípios</span></div><div class="disco-meter"><i style="width:${(A.pct_pop*100).toFixed(2)}%;background:var(--b-green)"></i></div></div></div>`+
       `<p class="disco-explainer">O índice compara a participação de cada município no coeficiente com sua participação na população. Não é uma medida de pobreza nem indica ganho ou perda com a reforma.</p>`);
 
-    dlgDest.innerHTML = `<div class="inc-top"><div><h2>Descobertas na receita histórica</h2><p class="fine" style="margin:4px 0 0">Seis gráficos e contrastes encontrados nos dados de ${ANOS[0]}–${U}.</p></div><button type="button" id="dstFechar">Fechar</button></div>` +
+    // Dois cartões restaurados do painel original; os percentuais já são
+    // calculados acima em DEST.uf_mun e DEST.qualidade, a partir das bases.
+    const ufParticipacao = D.uf_mun;
+    const liderMun = ufParticipacao[0], menorMun = ufParticipacao[ufParticipacao.length - 1];
+    const c7 = card(`Peso dos municípios na receita histórica da UF: de ${pc(menorMun[1],0)} a ${pc(liderMun[1],0)}`,
+      `Participação do conjunto dos municípios na soma dos coeficientes do governo estadual e dos municípios da mesma UF. Maior em ${EST[liderMun[0]].n} e menor em ${EST[menorMun[0]].n}.`,
+      barrasUF(ufParticipacao, (v)=>pc(v,1), "var(--d1)"),
+      `Indicador descritivo dos valores usados nesta estimativa (2019–${U}); não corresponde à alíquota municipal do IBS. Pode ser afetado por divergências nos registros da DCA e pelos fundos estaduais não identificados separadamente. Consulte os detalhes por UF.`,
+      "dst-wide");
+
+    const qual = D.qualidade, maiorQual = qual[0], menorQual = qual[qual.length - 1];
+    const c8 = card(`Dados estimados ou com alerta: de ${pc(menorQual[1],0)} a ${pc(maiorQual[1],0)} dos municípios`,
+      `Percentual de municípios com ao menos um valor estimado, uma inconsistência ou um ponto de atenção na série 2019–${U}. Maior em ${EST[maiorQual[0]].n} e menor em ${EST[menorQual[0]].n}.`,
+      barrasUF(qual, (v)=>pc(v,0), "var(--serious)"),
+      `Esses alertas são indícios, não confirmação de erro. A proporção mede quantos municípios tiveram algum apontamento, e não a gravidade financeira do problema. Clique no estado e consulte os registros antes de concluir que é necessária uma retificação.`,
+      "dst-wide");
+
+    dlgDest.innerHTML = `<div class="inc-top"><div><h2>Descobertas na receita histórica</h2><p class="fine" style="margin:4px 0 0">Oito análises e contrastes encontrados nos dados de ${ANOS[0]}–${U}.</p></div><button type="button" id="dstFechar">Fechar</button></div>` +
       `<p class="disco-alert">São análises da <strong>parcela histórica estimada</strong>, não previsões da receita pelo destino. O ano de 2026 e fundos estaduais não identificáveis com segurança não entram na estimativa.</p>` +
-      `<div class="dst-grid">${[c1,c2,c3,c4,c5,c6].join("")}</div>` +
+      `<div class="dst-grid">${[c1,c2,c3,c4,c5,c6,c7,c8].join("")}</div>` +
       `<p class="fine" style="margin-top:15px">Fonte: DCA/Siconfi, série ${ANOS[0]}–${U}, com estimativas e ajustes descritos na metodologia. Clique no nome de uma cidade para consultar o detalhe e baixar os dados utilizados.</p>`;
     dlgDest.querySelector("#dstFechar").onclick = () => dlgDest.close();
     dlgDest.querySelectorAll("a[data-cod]").forEach((a) => (a.onclick = () => { dlgDest.close(); ir(a.dataset.uf, a.dataset.cod); }));
+    dlgDest.querySelectorAll("a[data-uf-only]").forEach((a) => (a.onclick = () => {
+      dlgDest.close(); ir(a.dataset.ufOnly, "", false); window.scrollTo({top:0, behavior:"smooth"});
+    }));
   }
   let pronto = false;
   btnDest.onclick = () => { if (!pronto) { montarDestaques(); pronto = true; } dlgDest.showModal(); };
