@@ -14,6 +14,7 @@
   --good: #0ca30c; --good-ink: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
   --d-3: #ffffcc; --d-2: #c7e9b4; --d-1: #7fcdbb; --d0: #41b6c4; --d1: #1d91c0; --d2: #225ea8; --d3: #0c2c84;
   --map-line: #fcfcfb; --sel: #0b0b0b;
+  --b-green: #058a5b; --b-navy: #0b2f5e; --b-wine: #6e2142; --b-ink: #0b2f5e;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -24,6 +25,7 @@
     --s1: #41b6c4; --s2: #c7e9b4;
     --good-ink: #0ca30c;
         --map-line: #1a1a19; --sel: #f0efec;
+    --b-green: #1fa774; --b-navy: #1c4f8f; --b-wine: #8a3557; --b-ink: #9cc0f0;
   }
 }
 * { box-sizing: border-box; }
@@ -152,6 +154,19 @@ input[type=search] { font: inherit; font-size: 14px; color: var(--ink); backgrou
 .dst .cols .hb { grid-template-columns: minmax(0, 1fr) 28% auto; }
 .dst .cols h4 { margin: 0 0 6px; font-size: 13px; font-weight: 550; color: var(--ink-2); }
 .dst .fonte { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); }
+/* detalhes de identidade: verde, azul-marinho e vinho */
+header { background: linear-gradient(100deg, var(--b-wine) 0 7%, var(--b-green) 7% 64%, var(--b-navy) 64%) top / 100% 5px no-repeat, var(--surface); }
+h1 { color: var(--b-ink); }
+#btnDest, #btnInc, #btnMet { color: var(--b-ink); border-color: color-mix(in srgb, var(--b-ink) 45%, transparent); font-weight: 550; }
+#btnDest:hover, #btnInc:hover, #btnMet:hover { background: var(--b-navy); border-color: var(--b-navy); color: #fff; }
+#btnDest { background: var(--b-green); border-color: var(--b-green); color: #fff; }
+#btnDest:hover { background: var(--b-navy); }
+.modo button.on { background: var(--b-navy); border-color: var(--b-navy); color: #fff; }
+.kpi { border-top: 3px solid var(--b-green); }
+dialog { background: linear-gradient(100deg, var(--b-wine) 0 7%, var(--b-green) 7% 64%, var(--b-navy) 64%) top / 100% 5px no-repeat, var(--surface); }
+dialog h2 { color: var(--b-ink); }
+.dst { border-top: 3px solid var(--b-navy); }
+footer { border-top: 1px solid var(--border); padding-top: 14px; }
 footer { max-width: 1320px; margin: 0 auto; padding: 0 24px 32px; font-size: 12px; color: var(--muted); }
 .rank td a { font-weight: 550; }
 .bar-bg { fill: transparent; }
@@ -475,11 +490,10 @@ function telaMun(cod) {
 function telaUF(uf) {
   const r = EST[uf], ehDF = uf === "DF";
   const base = r.y.map((x) => x[3]);
-  const g = grafico({
-    series: [{ nome: ehDF ? "ICMS + ISS" : "ICMS após a cota-parte", cor: "var(--s1)", vals: base }],
-    est: [r.y.map((x) => x[5] === 1)],
-    tracejado: r.y.map((x) => x[4] === 1),
-  });
+  const estE = r.y.map((x) => x[5] === 1);
+  const g = grafico(ehDF
+    ? { series: [{ nome: "ICMS", cor: "var(--s1)", vals: r.y.map((x) => x[0]) }, { nome: "ISS", cor: "var(--s2)", vals: r.iss_df }], est: [estE, estE] }
+    : { series: [{ nome: "ICMS após a cota-parte", cor: "var(--s1)", vals: base }], est: [estE], tracejado: r.y.map((x) => x[4] === 1) });
   const REG = ["declarada", "cota-parte dos municípios", "ICMS + ISS"];
   const tt = (i) => `<b>${ANOS[i]}</b><br>ICMS bruto: ${fBRL(r.y[i][0])}` + (ehDF ? `<br>ISS: ${fBRL(r.iss_df[i])}` : `<br>Dedução declarada: ${fBRL(r.y[i][1])}<br>Cota-parte dos municípios: ${fBRL(r.y[i][2])}`) + `<br>Base: ${fBRL(base[i])} (${REG[r.y[i][4]]})`;
   const linhas = ANOS.map((a, i) => `<tr><td>${a}</td><td class="${r.y[i][5] ? "est" : ""}">${fBRL(r.y[i][0])}${r.y[i][5] ? "*" : ""}</td>` +
